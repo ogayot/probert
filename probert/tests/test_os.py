@@ -16,12 +16,12 @@ import subprocess
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch
 
-from probert.os import probe, _parse_osprober, _run_os_prober
+from probert.os import probe, _parse_osprober, _cache_os_prober
 
 
 class TestOsProber(IsolatedAsyncioTestCase):
     def tearDown(self):
-        _run_os_prober.cache_clear()
+        _cache_os_prober.cache_clear()
 
     def test_empty(self):
         self.assertEqual({}, _parse_osprober([]))
@@ -147,9 +147,9 @@ class TestOsProber(IsolatedAsyncioTestCase):
         run.side_effect = subprocess.CalledProcessError(1, 'cmd')
         self.assertEqual({}, await probe())
 
-    @patch('probert.os.subprocess.run')
+    @patch('probert.os._run_os_prober')
     async def test_run_once(self, run):
-        run.return_value.stdout = ''
+        run.return_value = ''
         self.assertEqual({}, await probe())
         self.assertEqual({}, await probe())
         run.assert_called_once()

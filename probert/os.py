@@ -19,6 +19,7 @@ import logging
 import re
 import shutil
 import subprocess
+from typing import Optional
 
 log = logging.getLogger('probert.os')
 
@@ -60,7 +61,11 @@ def _parse_osprober(lines):
 
 
 @functools.lru_cache(maxsize=1)
-def _run_os_prober():
+def _cache_os_prober() -> Optional[str]:
+    return _run_os_prober()
+
+
+def _run_os_prober() -> Optional[str]:
     for cmd in 'subiquity.os-prober', 'os-prober':
         if shutil.which(cmd):
             break
@@ -83,7 +88,7 @@ def _run_os_prober():
 async def probe(context=None, **kw):
     """Capture detected OSes. Indexed by partition as decided by os-prober."""
     output = await asyncio.get_running_loop().run_in_executor(
-            None, _run_os_prober)
+            None, _cache_os_prober)
     if not output:
         return {}
     return _parse_osprober(output.splitlines())
