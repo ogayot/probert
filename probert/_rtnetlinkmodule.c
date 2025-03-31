@@ -390,6 +390,26 @@ listener_data_ready(PyObject *self, PyObject* args)
 	return maybe_restore(listener);
 }
 
+struct rtnl_link * get_right_link_object(struct nl_cache *link_cache, int ifindex)
+{
+    struct rtnl_link *rv;
+    struct rtnl_link *filter = rtnl_link_alloc();
+    /* TODO check for NULL */
+
+    rtnl_link_set_ifindex(filter, ifindex);
+
+    void cb(struct rtnl_link *candidate, struct rtnl_link **linkp) {
+        if (rtnl_link_get_family(candidate) != AF_INET6) {
+            nl_object_get(candidate);
+            *linkp = candidate;
+        }
+    }
+
+    nl_cache_foreach_filter(link_cache, filter, cb, &rv);
+
+    return rv;
+}
+
 static PyObject*
 listener_set_link_flags(PyObject *self, PyObject* args, PyObject* kw)
 {
@@ -400,7 +420,7 @@ listener_set_link_flags(PyObject *self, PyObject* args, PyObject* kw)
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "ii:set_link_flags", kwlist, &ifindex, &flags))
 		return NULL;
 	struct Listener* listener = (struct Listener*)self;
-	struct rtnl_link *link = rtnl_link_get(listener->link_cache, ifindex);
+	struct rtnl_link *link = get_right_link_object(listener->link_cache, ifindex);
 	if (link == NULL) {
 		PyErr_SetString(PyExc_RuntimeError, "link not found");
 		return NULL;
@@ -439,7 +459,7 @@ listener_unset_link_flags(PyObject *self, PyObject* args, PyObject* kw)
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "ii:unset_link_flags", kwlist, &ifindex, &flags))
 		return NULL;
 	struct Listener* listener = (struct Listener*)self;
-	struct rtnl_link *link = rtnl_link_get(listener->link_cache, ifindex);
+	struct rtnl_link *link = get_right_link_object(listener->link_cache, ifindex);
 	if (link == NULL) {
 		PyErr_SetString(PyExc_RuntimeError, "link not found");
 		return NULL;
