@@ -19,7 +19,9 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install tox
     - name: Test
-      run: tox
+      run: | 
+        sudo ./scripts/github-ci-lxd-setup.sh
+        sudo ./scripts/test-in-lxd.sh ${{ matrix.image }} "sudo apt-get update && sudo apt-get --assume-yes build-dep . && apt-get install --assume-yes tox && tox"
     - name: Build
       run: |
         python3 setup.py build_ext -i
